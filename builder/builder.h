@@ -1,0 +1,4 @@
+namespace builder
+{
+    bool build( );
+}
