@@ -1,6 +1,7 @@
 #include "options.h"
 
 #include <cstdio>
+#include <iostream>
 #include <fstream>
 #include <cstring>
 
@@ -16,132 +17,119 @@ namespace options
         std::memset( m_c_tab.m_command_line, 0, sizeof( m_c_tab.m_command_line ) );
         std::memset( m_linker_tab.m_command_line, 0, sizeof( m_linker_tab.m_command_line ) );
 
-        if ( m_compiler == 1 )
         {
             // c/c++
-            {
-                subtab_t general;
-                general.m_name = "General##c";
-                general.add_options( 
-                    option_t( true, "Additional Include Directories" ),
-                    option_t( "Debug information format", choice_t( "None" ), choice_t( "C7 compatible", "/Z7" ), choice_t( "Program Database", "/Zi" ), choice_t( "Program Database for Edit and Continue", "/ZI" ) ),
-                    option_t( "Support Just My Code Debugging", choice_t( "No", "/JMC-" ), choice_t( "Yes", "/JMC" ) ),
-                    option_t( "Warning Level", choice_t( "Turn off all warnings", "/W0" ), choice_t( "Level 1", "/W1" ), choice_t( "Level 2", "/W2" ), choice_t( "Level 3", "/W3" ), choice_t( "Level 4", "/W4" ) ),
-                    option_t( "Treat Warnings as Errors", choice_t( "No", "/WX-" ), choice_t( "Yes", "/WX" ) ),
-                    //option_t( "Warning Version", choice_t( "##warning_version_label" ), choice_t( "Default", "/Wv:18" ), choice_t( "14", "/Wv:14" ), choice_t( "17", "/Wv:17" ), choice_t( "19", "/Wv:19" ) ),
-                    option_t( "Diagnostics Format", choice_t( "Column", "/diagnostics:column" ), choice_t( "Caret", "/diagnostics:caret" ), choice_t( "Classic", "/diagnostics:classic" ) ),
-                    option_t( "Multi-processor Compilation", choice_t( "No" ), choice_t( "Yes", "/MP" ) ),
-                    option_t( "Enable Address Sanitizer", choice_t( "No" ), choice_t( "Yes", "/fsanitize=address" ) )
-                );
+            subtab_t general;
+            general.m_name = "General##c";
 
-                m_c_tab.m_subtabs.push_back( general );
+            option_t debug_info_format[ 2 ] = {
+                option_t( "Debug Information Format", choice_t( "None", "-g0" ), choice_t( "Minimal Debug Information", "-g1" ), choice_t( "Full Debug Information (DWARF2)", "-g2 -gdwarf-2" ) ),
+                option_t( "Debug Information Format", choice_t( "None" ), choice_t( "Yes", "-gcodeview" ) )
+            };
 
-                subtab_t optimization;
-                optimization.m_name = "Optimization##c";
+            general.add_options( 
+                option_t( true, "Additional Include Directories" ),
+                option_t( true, "Exclude Files From Build" ),
+                debug_info_format[ m_compiler ],
+                option_t( "Just My Code Debugging", choice_t( "No" ), choice_t( "Yes", "-fjmc" ) ),
+                option_t( "Warning Level", choice_t( "Level 1", "-Wall" ), choice_t( "Level 2", "-Wall -Wextra" ), choice_t( "Level 3", "-Weverything" ), choice_t( "Disable All", "-w" ) ),
+                option_t( "Treat Warnings as Errors", choice_t( "No" ), choice_t( "Yes", "-Werror" ) ),
+                option_t( true, "C Additional Warnings" ),
+                option_t( true, "C++ Additional Warnings" ),
+                option_t( "Enable Verbose Mode", choice_t( "No" ), choice_t( "Yes", "-v" ) ),
+                option_t( "Multi-processor Compilation", choice_t( "No" ), choice_t( "Yes", "/MP" ) ),
+                option_t( "Enable Address Sanitizer", choice_t( "No" ), choice_t( "Yes", "-fsanitize=address" ) )
+            );
 
-                optimization.add_options(
-                    option_t( "Optimization", choice_t( "Disabled", "/Od" ), choice_t( "Minimize Size", "/Os" ), choice_t( "Maximize Speed", "/O2" ), choice_t( "Optimizations", "/Ox" ) ),
-                    option_t( "Inline Function Expansion", choice_t( "Default", "/Ob2" ), choice_t( "Only __inline", "/Ob1" ), choice_t( "Any Suitable", "/Ob2" ) ),
-                    option_t( "Enable Intrinsic Functions", choice_t( "No" ), choice_t( "Yes", "/Oi" ) ),
-                    option_t( "Favor Size Or Speed", choice_t( "Favor fast code", "/Ot" ), choice_t( "Neither" ), choice_t( "Favor small code", "/Os" ) ),
-                    option_t( "Omit Frame Pointers", choice_t( "No", "/Oy-" ), choice_t( "Yes", "/Oy" ) )//,
-                    //option_t( "Enable Fiber-Safe Optimizations", choice_t( "No" ), choice_t( "Yes", "/GT" ) )
-                );
+            m_c_tab.m_subtabs.push_back( general );
 
-                m_c_tab.m_subtabs.push_back( optimization );
+            subtab_t optimization;
+            optimization.m_name = "Optimization##c";
 
-                subtab_t preprocessor;
-                preprocessor.m_name = "Preprocessor##c";
+            optimization.add_options( 
+                option_t( "Optimization Level", choice_t( "None", "-O0" ), choice_t( "Minimize Size", "-Os" ), choice_t( "Maximize Speed", "-O2" ), choice_t( "Full Optimization", "-O3" ) ),
+                option_t( "Strict Aliasing", choice_t( "No", "-fno-strict-aliasing" ), choice_t( "Yes", "-fstrict-aliasing" ) ),
+                option_t( "Unroll Loops", choice_t( "No" ), choice_t( "Yes", "-funroll-loops" ) ),
+                option_t( "Link Time Optimization", choice_t( "No" ), choice_t( "Yes", "-flto" ) ),
+                option_t( "Omit Frame Pointers", choice_t( "No", "-fno-omit-frame-pointer" ), choice_t( "Yes", "-fomit-frame-pointer" ) )
+            );
 
-                preprocessor.add_options( 
+            m_c_tab.m_subtabs.push_back( optimization );
+
+            subtab_t preprocessor;
+            preprocessor.m_name = "Preprocessor##c";
+
+            preprocessor.add_options( 
                     option_t( true, "Preprocessor Definitions" ),
                     option_t( true, "Undefine Preprocessor Definitions" ),
-                    option_t( "Undefine All Preprocessor Definitions", choice_t( "No" ), choice_t( "Yes", "/u" ) ),
-                    option_t( "Preprocess to a File", choice_t( "No" ), choice_t( "Yes", "/P" ) ),
-                    option_t( "Preprocess Suppress Line Numbers", choice_t( "No" ), choice_t( "Yes", "/EP" ) ),
-                    option_t( "Keep Comments", choice_t( "No" ), choice_t( "Yes", "/C" ) )
-                );
+                    option_t( "Undefine All Preprocessor Definitions", choice_t( "No" ), choice_t( "Yes", "-undef" ) ),
+                    option_t( "Show All Includes", choice_t( "No" ), choice_t( "Yes", "-H" ) )
+            );
 
-                m_c_tab.m_subtabs.push_back( preprocessor );
+            m_c_tab.m_subtabs.push_back( preprocessor );
 
-                subtab_t code_generation;
-                code_generation.m_name = "Code Generation##c";
+            subtab_t code_generation;
+            code_generation.m_name = "Code Generation##c";
 
-                code_generation.add_options(
-                    option_t( "Enable String Pooling", choice_t( "No", "/GF-" ), choice_t( "Yes", "/GF" ) ),
-                    option_t( "Enable C++ Exceptions", choice_t( "Yes", "/EHsc" ), choice_t( "No", "/EHsc-" ) ),
-                    //option_t( "Smaller Type Check", choice_t( "No" ), choice_t( "Yes", "/RTCc" ) ),
-                    option_t( "Runtime Library", choice_t( "Multi-threaded Debug DLL", "/MDd" ), choice_t( "Multi-threaded DLL", "/MD" ), choice_t( "Multi-threaded Debug", "/MTd" ), choice_t( "Multi-threaded", "/MT" ) ),
-                    option_t( "Struct Member Alignment", choice_t( "Default", "/Zp8" ), choice_t( "1 Byte", "/Zp1" ), choice_t( "2 Bytes", "/Zp2" ), choice_t( "4 Bytes", "/Zp4" ), choice_t( "8 Bytes", "/Zp8" ), choice_t( "16 Bytes", "/Zp16" ) ),
-                    option_t( "Security Check", choice_t( "No", "/GS-" ), choice_t( "Yes", "/GS" ) ),
-                    option_t( "Control Flow Guard", choice_t( "No", "/guard:cf-" ), choice_t( "Yes", "/guard:cf" ) ),
-                    option_t( "Enable Function-Level Linking", choice_t( "No", "/Gy-" ), choice_t( "Yes", "/Gy" ) ),
-                    option_t( "Enable Enhanced Instruction Set", choice_t( "Not Set" ), choice_t( "No Enhanced Instructions", "/arch:IA32" ), choice_t( "SSE", "/arch:SSE" ), choice_t( "SSE2", "/arch:SSE2" ), choice_t( "AVX", "/arch:AVX" ), choice_t( "AVX2", "/arch:AVX2" ), choice_t( "AVX512", "/arch:AVX512" ) ),
-                    option_t( "Floating Point Model", choice_t( "Precise", "/fp:precise" ), choice_t( "Strict", "/fp:strict" ), choice_t( "Fast", "/fp:fast" ) ),
-                    option_t( "Enable Floating Point Exceptions", choice_t( "##fp-eh" ), choice_t( "No", "/fp:except-" ), choice_t( "Yes", "/fp:except" ) ),
-                    option_t( "Enable Intel JCC Erratum Mitigation", choice_t( "No" ), choice_t( "Yes", "/QIntelJccErratum" ) ),
-                    option_t( "Enable EH Continuation Metadata", choice_t( "##eh-cont-metadata" ), choice_t( "No", "/guard:ehcont-" ), choice_t( "Yes", "/guard:ehcont" ) )
-                );
+            option_t runtime_lib[ 2 ] = {
+                option_t( "Run-Time Library" ),
+                option_t( "Run-Time Library", choice_t( "Multi-threaded", "-fms-runtime-lib=static" ), choice_t( "Multi-threaded Debug", "-fms-runtime-lib=static_dbg" ), choice_t( "Multi-threaded DLL", "-fms-runtime-lib=dll" ), choice_t( "Multi-threaded Debug DLL", "-fms-runtime-lib=dll_dbg" ) )
+            };
 
-                m_c_tab.m_subtabs.push_back( code_generation );
+            code_generation.add_options( 
+                option_t( "Enable C++ Exceptions", choice_t( "Yes", "-fexceptions" ), choice_t( "No", "-fno-exceptions" ) ),
+                runtime_lib[ m_compiler ],
+                option_t( "Struct Member Alignment", choice_t( "Default (8)", "-fpack-struct=8" ), choice_t( "1 Byte", "-fpack-struct=1" ), choice_t( "2 Bytes", "-fpack-struct=2" ), choice_t( "4 Bytes", "-fpack-strut=4" ), choice_t( "16 Bytes", "-fpack-struct=16" ) ),
+                option_t( "Security Check", choice_t( "Yes", "-fstack-protector" ), choice_t( "Strong", "-fstack-protector-strong" ), choice_t( "All", "-fstack-protector-all" ), choice_t( "No", "-fno-stack-protector" ) ),
+                //option_t( "Control Flow Guard", choice_t( "Yes", "-mguard=cf" ), choice_t( "Without Checks", "-mguard=cf-nochecks" ), choice_t( "No", "-mguard=none" ) ),
+                option_t( "Enable Function-Level Linking", choice_t( "Yes", "-ffunction-sections" ), choice_t( "No", "-fno-function-sections" ) ),
+                option_t( "Enable Enhanced Instruction Set", choice_t( "No" ), choice_t( "SSE", "-msse" ), choice_t( "SSE2", "-msse2" ), choice_t( "AVX", "-mavx" ), choice_t( "AVX2", "-mavx2" ), choice_t( "AVX512", "-mavx512" ) ),
+                option_t( "Floating Point Model", choice_t( "Precise", "-ffp-model=precise" ), choice_t( "Strict", "-ffp-model=strict" ), choice_t( "Fast", "-ffp-model=fast" ) )
+            );
 
-                subtab_t language;
-                language.m_name = "Language##c";
+            m_c_tab.m_subtabs.push_back( code_generation );
 
-                language.add_options(
-                    option_t( "Enable Run-Time Type Information", choice_t( "Yes", "/GR" ), choice_t( "No", "/GR-" ) ),
-                    option_t( "C++ Language Standard", choice_t( "Default", "/std:c++14" ), choice_t( "C++14", "/std:c++14" ), choice_t( "C++17", "/std:c++17" ), choice_t( "C++20", "/std:c++20" ), choice_t( "Preview", "/std:c++latest" ) ),
-                    option_t( "C Language Standard", choice_t( "Default", "/std:c11" ), choice_t( "C11", "/std:c11" ), choice_t( "C17", "/std:c17" ) )
-                );
+            subtab_t language;
+            language.m_name = "Language##c";
 
-                m_c_tab.m_subtabs.push_back( language );
+            language.add_options(
+                option_t( "Enable Run-Time Type Information", choice_t( "Yes", "-frtti" ), choice_t( "No", "-fno-rtti" ) ),
+                option_t( "C++ Language Standard", choice_t( "Default", "-std=c++14" ), choice_t( "C++14", "-std=c++14" ), choice_t( "C++17", "-std=c++17" ), choice_t( "C++20", "-std=c++20" ) ),
+                option_t( "C Language Standard", choice_t( "Default", "-std=c11" ), choice_t( "C11", "-std=c11" ), choice_t( "C17", "-std=c17" ) )
+            );
 
-                subtab_t precompiled_headers;
-                precompiled_headers.m_name = "Precompiled Headers##c";
+            m_c_tab.m_subtabs.push_back( language );
 
-                precompiled_headers.add_options( 
-                    option_t( "Precompiled Header", choice_t( "Not Using Precompiled Headers", "/Y-" ), choice_t( "Create Precompiled Header", "/Yc" ), choice_t( "Use Precompiled Header", "/Yu" ) ),
-                    option_t( true, "Precompiled Header File" ),
-                    option_t( true, "Precompiled Header Output File" )
-                );
+            subtab_t precompiled_headers;
+            precompiled_headers.m_name = "Precompiled Headers##c";
 
-                m_c_tab.m_subtabs.push_back( precompiled_headers );
+            precompiled_headers.add_options( option_t( true, "Precompiled Header File" ) );
 
-                subtab_t output_files;
-                output_files.m_name = "Output Files##c";
+            m_c_tab.m_subtabs.push_back( precompiled_headers );
 
-                output_files.add_options(
-                    option_t( "Assembler Output", choice_t( "No Listing", "/FA-" ), choice_t( "Assembly-Only Listing", "/FA" ), choice_t( "Assembly and Machine Code Listing", "/FAs" ), choice_t( "Assembly, Machine Code and Source", "/FAcs" ) ),
-                    option_t( true, "ASM List Location" ),
-                    option_t( true, "Object File" )
-                );
+            subtab_t advanced;
+            advanced.m_name = "Advanced##c";
 
-                m_c_tab.m_subtabs.push_back( output_files );
+            advanced.add_options(
+                option_t( "Compile As", choice_t( "Default" ), choice_t( "C++ Code", "-x c++" ), choice_t( "C Code", "-x c" ) ),
+                option_t( true, "Force Include File" )
+            );
 
-                subtab_t advanced;
-                advanced.m_name = "Advanced##c";
+            m_c_tab.m_subtabs.push_back( advanced );
 
-                advanced.add_options(
-                    option_t( "Calling Convention", choice_t( "__cdecl", "/Gd" ), choice_t( "__fastcall", "/Gr" ), choice_t( "__stdcall", "/Gz" ), choice_t( "__vectorcall", "/Gv" ) ),
-                    option_t( "Compile As", choice_t( "Default" ), choice_t( "Compile as C++ Code", "/TP" ), choice_t( "Compile as C Code", "/TC" ) ),
-                    option_t( true, "Force Include File" ),
-                    option_t( "Show Includes", choice_t( "No" ), choice_t( "Yes", "/showIncludes" ) ),
-                    option_t( "Omit Default Library Name", choice_t( "No" ), choice_t( "Yes", "/Zl" ) )
-                );
+            subtab_t all_options;
+            all_options.m_name = "All Options##c";
 
-                m_c_tab.m_subtabs.push_back( advanced );
+            m_c_tab.m_subtabs.push_back( all_options );
 
-                subtab_t all_options;
-                all_options.m_name = "All Options##c";
+            subtab_t command_line;
+            command_line.m_name = "Command Line##c";
 
-                m_c_tab.m_subtabs.push_back( all_options );
+            m_c_tab.m_subtabs.push_back( command_line );
+        }
 
-                subtab_t command_line;
-                command_line.m_name = "Command Line##c";
-
-                m_c_tab.m_subtabs.push_back( command_line );
-            }
-
+        if ( m_compiler == 1 )
+        {
             // linker
             {
                 subtab_t general;
@@ -150,13 +138,12 @@ namespace options
                 general.add_options(
                     option_t( true, "Output File" ),
                     option_t( true, "Version" ),
-                    option_t( "Enable Incremental Linking", choice_t( "Yes", "/INCREMENTAL" ), choice_t( "No", "/INCREMENTAL:NO" ) ),
-                    option_t( "Ignore Import Library", choice_t( "No" ), choice_t( "Yes", "/IGNORE:LIB" ) ),
-                    //option_t( "Register output", choice_t( "No" ), choice_t( "Yes", "/REGISTER" ) ),
+                    option_t( "Enable Incremental Linking", choice_t( "Yes", "/incremental" ), choice_t( "No", "/incremental:NO" ) ),
+                    option_t( "Ignore Import Library", choice_t( "No" ), choice_t( "Yes", "/ignore:LIB" ) ),
                     option_t( true, "Additional Library Directories" ),
-                    option_t( "Prevent Dll Binding", choice_t( "##prevent_dll_binding" ), choice_t( "No", "/ALLOWBIND:NO" ), choice_t( "Yes", "/ALLOWBIND" ) ),
+                    option_t( "Prevent Dll Binding", choice_t( "##prevent_dll_binding" ), choice_t( "No", "/allowbind:NO" ), choice_t( "Yes", "/allowbind" ) ),
                     option_t( "Treat Linker Warnings As Errors", choice_t( "No", "/WX:NO" ), choice_t( "Yes", "/WX" ) ),
-                    option_t( "Force File Output", choice_t( "No" ), choice_t( "Enabled", "/FORCE" ), choice_t( "Multiple Defined Symbols Only", "/FORCE:MULTIPLE" ), choice_t( "Undefined Symbols Only", "/FORCE:UNRESOLVED" ) ),
+                    option_t( "Force File Output", choice_t( "No" ), choice_t( "Enabled", "/force" ), choice_t( "Multiple Defined Symbols Only", "/force:multiple" ), choice_t( "Undefined Symbols Only", "/force:unresolved" ) ),
                     option_t( true, "Specify Section Attributes" )
                 );
 
@@ -167,7 +154,7 @@ namespace options
 
                 input.add_options(
                     option_t( true, "Additional Dependencies" ),
-                    option_t( "Ignore All Default Libraries", choice_t( "No" ), choice_t( "Yes", "/NODEFAULTLIB" ) ),
+                    option_t( "Ignore All Default Libraries", choice_t( "No" ), choice_t( "Yes", "/nodefaultlib" ) ),
                     option_t( true, "Ignore Specific Default Libraries" )
                 );
 
@@ -177,10 +164,10 @@ namespace options
                 manifest_file.m_name = "Manifest File##linker";
 
                 manifest_file.add_options(
-                    option_t( "Generate Manifest", choice_t( "No", "/MANIFEST:NO" ), choice_t( "Yes", "/MANIFEST" ) ),
-                    option_t( "Enable User Account Control", choice_t( "No", "/MANIFESTUAC:NO" ), choice_t( "Yes", "/MANIFESTUAC:" ) ),
-                    option_t( "UAC Execution Level", choice_t( "As Invoker", "level='asInvoker'" ), choice_t( "Highest Available", "level='highestAvailable'" ), choice_t( "Require Administrator", "level='requireAdministrator'" ) ),
-                    option_t( "UAC Bypass UI Protection", choice_t( "No", "uiAccess='false'" ), choice_t( "Yes", "uiAccess='true'" ) )
+                    option_t( "Generate Manifest", choice_t( "No", "/manifest:NO" ), choice_t( "Yes", "/manifest" ) ),
+                    option_t( "Enable User Account Control", choice_t( "No", "/manifestuac:NO" ), choice_t( "Yes" ) ),
+                    option_t( "UAC Execution Level", choice_t( "As Invoker", "/manifestuac:\"level='asInvoker'" ), choice_t( "Highest Available", "/manifestuac:\"level='highestAvailable'" ), choice_t( "Require Administrator", "/manifestuac:level=\"'requireAdministrator'" ) ),
+                    option_t( "UAC Bypass UI Protection", choice_t( "No", "uiAccess='false'\"" ), choice_t( "Yes", "uiAccess='true'\"" ) )
                 );
 
                 m_linker_tab.m_subtabs.push_back( manifest_file );
@@ -189,8 +176,9 @@ namespace options
                 debug.m_name = "Debugging##linker";
 
                 debug.add_options(
-                    option_t( "Generate Debug Info", choice_t( "None", "/DEBUG:NONE" ), choice_t( "Yes", "/DEBUG" ), choice_t( "Optimized for faster links", "/DEBUG:FASTLINK" ), choice_t( "Optimized for sharing and publishing", "/DEBUG:FULL" ) ),
-                    option_t( true, "Generate Program Database File" )
+                    option_t( "Generate Debug Info", choice_t( "None", "/debug:NONE" ), choice_t( "Yes", "/debug" ), choice_t( "Optimized for faster links", "/debug:FASTLINK" ), choice_t( "Optimized for sharing and publishing", "/debug:FULL" ) ),
+                    option_t( true, "Generate Program Database File" ),
+                    option_t( true, "Map File" )
                 );
 
                 m_linker_tab.m_subtabs.push_back( debug );
@@ -199,14 +187,11 @@ namespace options
                 system.m_name = "System##linker";
 
                 system.add_options(
-                    option_t( "SubSystem", choice_t( "Console", "/SUBSYSTEM:CONSOLE" ), choice_t( "Windows", "/SUBSYSTEM:WINDOWS" ), choice_t( "Native", "/SUBSYSTEM:NATIVE" ), choice_t( "EFI Application", "/SUBSYSTEM:EFI_APPLICATION" ), choice_t( "EFI Boot Service Driver", "/SUBSYSTEM:EFI_BOOT_SERVICE_DRIVER" ), choice_t( "EFI ROM", "/SUBSYSTEM:EFI_ROM" ), choice_t( "EFI Runtime Driver", "/SUBSYSTEM:EFI_RUNTIME_DRIVER" ) ),
-                    option_t( true, "Minimum Required Version" ),
-                    option_t( true, "Heap Reserve Size" ),
-                    option_t( true, "Heap Commit Size" ),
-                    option_t( true, "Stack Reserve Size" ),
-                    option_t( true, "Stack Commit Size" ),
-                    option_t( true, "Large Address Aware" ),
-                    option_t( "Driver", choice_t( "Not set" ), choice_t( "Driver", "/Driver" ), choice_t( "UP Only", "/DRIVER:UPONLY" ), choice_t( "WDM", "/DRIVER:WDM" ) )
+                    option_t( "SubSystem", choice_t( "Console", "/subsystem:CONSOLE" ), choice_t( "Windows", "/subsystem:WINDOWS" ), choice_t( "Native", "/subsystem:NATIVE" ), choice_t( "EFI Application", "/subsystem:EFI_APPLICATION" ), choice_t( "EFI Boot Service Driver", "/subsystem:EFI_BOOT_SERVICE_DRIVER" ), choice_t( "EFI ROM", "/subsystem:EFI_ROM" ), choice_t( "EFI Runtime Driver", "/subsystem:EFI_RUNTIME_DRIVER" ) ),
+                    option_t( true, "Heap Size (reserve,commit)" ),
+                    option_t( true, "Stack Size (reserve,commit)" ),
+                    option_t( "Large Address Aware", choice_t( "Default" ), choice_t( "Yes", "/largeaddressaware" ), choice_t( "/largeaddressaware:no" ) ),
+                    option_t( "Driver", choice_t( "Not set" ), choice_t( "Driver", "/driver" ), choice_t( "UP Only", "/driver:uponly" ), choice_t( "WDM", "/driver:wdm" ) )
                 );
 
                 m_linker_tab.m_subtabs.push_back( system );
@@ -215,8 +200,8 @@ namespace options
                 optimization.m_name = "Optimization##linker";
 
                 optimization.add_options(
-                    option_t( "Optimize References", choice_t( "No", "/OPT:NOREF" ), choice_t( "Yes", "/OPT:REF" ) ),
-                    option_t( "Enable COMDAT Folding", choice_t( "No", "/OPT:NOICF" ), choice_t( "Yes", "/OPT:ICF" ) ),
+                    option_t( "Optimize References", choice_t( "No", "/opt:noref" ), choice_t( "Yes", "/opt:ref" ) ),
+                    option_t( "Enable COMDAT Folding", choice_t( "No", "/opt:noicf" ), choice_t( "Yes", "/opt:icf" ) ),
                     option_t( true, "Function Order" )
                 );
 
@@ -227,14 +212,14 @@ namespace options
 
                 advanced.add_options( 
                     option_t( true, "Entry Point" ),
-                    option_t( "No Entry Point", choice_t( "No" ), choice_t( "Yes", "/NOENTRY" ) ),
+                    option_t( "No Entry Point", choice_t( "No" ), choice_t( "Yes", "/noentry" ) ),
                     option_t( true, "Base Address" ),
-                    option_t( "Randomized Base Address", choice_t( "Yes", "/DYNAMICBASE" ), choice_t( "No", "/DYNAMICBASE:NO" ) ),
-                    option_t( "Fixed Base Address", choice_t( "No", "/FIXED:NO" ), choice_t( "Yes", "/FIXED" ) ),
-                    option_t( "Data Execution Prevention (DEP)", choice_t( "Yes", "/NXCOMPAT" ), choice_t( "No", "/NXCOMPAT:NO" ) ),
+                    option_t( "Randomized Base Address", choice_t( "Yes", "/dynamicbase" ), choice_t( "No", "/dynamicbase:no" ) ),
+                    option_t( "Fixed Base Address", choice_t( "No", "/fixed:no" ), choice_t( "Yes", "/fixed" ) ),
+                    option_t( "Data Execution Prevention (DEP)", choice_t( "Yes", "/nxcompat" ), choice_t( "No", "/nxcompat:no" ) ),
                     option_t( true, "Import Library" ),
                     option_t( true, "Merge Sections" ),
-                    option_t( "Target Machine", choice_t( "Not Set" ), choice_t( "MachineX86", "/MACHINE:X86" ), choice_t( "MachineX64", "/MACHINE:X64" ), choice_t( "MachineARM", "/MACHINE:ARM" ), choice_t( "MachineARM64", "/MACHINE:ARM64" ) )
+                    option_t( "Target Machine", choice_t( "Not Set" ), choice_t( "x86", "/machine:x86" ), choice_t( "x64", "/machine:x64" ), choice_t( "ARM", "/machine:arm" ), choice_t( "ARM64", "/machine:arm64" ) )
                 );
 
                 m_linker_tab.m_subtabs.push_back( advanced );
@@ -252,98 +237,6 @@ namespace options
         }
         else
         {
-            // c/c++
-            {
-                subtab_t general;
-                general.m_name = "General##c";
-
-                general.add_options( 
-                    option_t( true, "Additional Include Directories" ),
-                    //option_t( true, "Public Project Include Directories" ),
-                    option_t( "Debug Information Format", choice_t( "None", "-g0" ), choice_t( "Minimal Debug Information", "-g1" ), choice_t( "Full Debug Information (DWARF2)", "-g2 -gdwarf-2" ) ),
-                    option_t( "Warning Level", choice_t( "Enable All Warnings", "-Wall" ), choice_t( "Turn Off All Warnings", "-w" ) ),
-                    option_t( "Treat Warnings As Errors", choice_t( "No" ), choice_t( "Yes", "-Werror" ) ),
-                    option_t( true, "C Additional Warnings" ),
-                    option_t( true, "C++ Additional Warnings" ),
-                    option_t( "Enable Verbose Mode", choice_t( "No" ), choice_t( "Yes", "-v" ) ),
-                    option_t( "Multi-processor Compilation", choice_t( "No" ), choice_t( "Yes", "/MP" ) )
-                );
-
-                m_c_tab.m_subtabs.push_back( general );
-
-                subtab_t optimization;
-                optimization.m_name = "Optimization##c";
-
-                optimization.add_options(
-                    option_t( "Optimization Level", choice_t( "None", "-O0" ), choice_t( "Minimize Size", "-Os" ), choice_t( "Maximize Speed", "-O2" ), choice_t( "Full Optimization", "-O3" ) ),
-                    option_t( "Strict Aliasing", choice_t( "No", "-fno-strict-aliasing" ), choice_t( "Yes", "-fstrict-aliasing" ) ),
-                    option_t( "Unroll Loops", choice_t( "No" ), choice_t( "Yes", "-funroll-loops" ) ),
-                    option_t( "Link Time Optimization", choice_t( "No" ), choice_t( "Yes", "-flto" ) ),
-                    option_t( "Omit Frame Pointers", choice_t( "No", "-fno-omit-frame-pointer" ), choice_t( "Yes", "-fomit-frame-pointer" ) ),
-                    option_t( "No Common Blocks", choice_t( "No" ), choice_t( "Yes", "-fno-common" ) )
-                );
-
-                m_c_tab.m_subtabs.push_back( optimization );
-
-                subtab_t preprocessor;
-                preprocessor.m_name = "Preprocessor##c";
-
-                preprocessor.add_options( 
-                    option_t( true, "Preprocessor Definitions" ),
-                    option_t( true, "Undefine Preprocessor Definitions" ),
-                    option_t( "Undefine All Preprocessor Definitions", choice_t( "No" ), choice_t( "Yes", "-undef" ) ),
-                    option_t( "Show All Includes", choice_t( "No" ), choice_t( "Yes", "-H" ) )
-                );
-
-                m_c_tab.m_subtabs.push_back( preprocessor );
-
-                subtab_t code_generation;
-                code_generation.m_name = "Code Generation##c";
-
-                code_generation.add_options(
-                    option_t( "Position Independent Code", choice_t( "No" ), choice_t( "Yes", "-fPIC" ) ),
-                    option_t( "Statics are thread safe", choice_t( "Yes", "-fthreadsafe-statics" ), choice_t( "No", "-fno-threadsafe-statics" ) ),
-                    option_t( "Floating Point Optimization", choice_t( "No" ), choice_t( "Yes", "-ffast-math" ) ),
-                    option_t( "Inline Methods Hidden", choice_t( "No" ), choice_t( "Yes", "-fvisibility-inlines-hidden" ) ),
-                    option_t( "Symbol Hiddens By Default", choice_t( "No" ), choice_t( "Yes", "-fvisibility=hidden" ) ),
-                    option_t( "Enable C++ Exceptions", choice_t( "Yes", "-fexceptions" ), choice_t( "No", "-fno-exceptions" ) ),
-                    option_t( "Enable Enhanced Instruction Set", choice_t( "Not Set" ), choice_t( "No Enhanced Instructions", "-march=generic" ), choice_t( "SSE", "-msse" ), choice_t( "SSE2", "-msse2" ), choice_t( "AVX", "-mavx" ), choice_t( "AVX2", "-mavx2" ), choice_t( "AVX512", "-mavx512" ) )
-                );
-
-                m_c_tab.m_subtabs.push_back( code_generation );
-
-                subtab_t language;
-                language.m_name = "Language##c";
-
-                language.add_options(
-                    option_t( "Enable Run-Time Type Information", choice_t( "Yes", "-frtti" ), choice_t( "No", "-fno-rtti" ) ),
-                    option_t( "C++ Language Standard", choice_t( "Default", "-std=c++14" ), choice_t( "C++14", "-std=c++14" ), choice_t( "C++17", "-std=c++17" ), choice_t( "C++20", "-std=c++20" ) ),
-                    option_t( "C Language Standard", choice_t( "Default", "-std=c11" ), choice_t( "C11", "-std=c11" ), choice_t( "C17", "-std=c17" ) )
-                );
-
-                m_c_tab.m_subtabs.push_back( language );
-
-                subtab_t advanced;
-                advanced.m_name = "Advanced##c";
-
-                advanced.add_options( 
-                    option_t( "Compile As", choice_t( "Default" ), choice_t( "Compile as C++ Code", "-x c++" ), choice_t( "Compile as C Code", "-x c" ) ),
-                    option_t( true, "Force Include File" )
-                );
-
-                m_c_tab.m_subtabs.push_back( advanced );
-
-                subtab_t all_options;
-                all_options.m_name = "All Options##c";
-
-                m_c_tab.m_subtabs.push_back( all_options );
-
-                subtab_t command_line;
-                command_line.m_name = "Command Line##c";
-
-                m_c_tab.m_subtabs.push_back( command_line );
-            }
-
             // linker
             {
                 subtab_t general;
@@ -414,11 +307,15 @@ namespace options
 
     void open( )
     {
-        std::ifstream file( m_config_file );
+        std::string config_filename = m_config_file;
+        if ( config_filename.rfind( ".pivo" ) != ( config_filename.size( ) - config_filename.size( ) ) )
+            config_filename += ".pivo";
+
+        std::ifstream file( config_filename );
 
         if ( !file.is_open( ) || !file.good( ) )
         {
-            fprintf( stderr, "failed to open file %s\n", m_config_file );
+            std::cout << "Failed to open file " << config_filename << std::endl;
             return;
         }
 
@@ -476,11 +373,15 @@ namespace options
 
     void save( )
     {
-        std::ofstream file( m_config_file );
+        std::string config_filename = m_config_file;
+        if ( config_filename.rfind( ".pivo" ) != ( config_filename.size( ) - config_filename.size( ) ) )
+            config_filename += ".pivo";
+
+        std::ofstream file( config_filename );
 
         if ( !file.is_open( ) || !file.good( ) )
         {
-            fprintf( stderr, "failed to open file %s\n", m_config_file );
+            std::cout << "Failed to open file " << config_filename << std::endl;
             return;
         }
 
@@ -506,8 +407,69 @@ namespace options
             }
         }
 
-        file << json;
+        file << std::setw( 4 ) << json;
 
         file.close( );
+    }
+
+    void load_defaults_debug( )
+    {
+        init( );
+
+        std::memset( m_c_tab.m_command_line, 0, sizeof( m_c_tab.m_command_line ) );
+        std::memset( m_linker_tab.m_command_line, 0, sizeof( m_linker_tab.m_command_line ) );
+
+        m_c_tab[ "General##c" ][ "Debug Information Format" ].set_choice( m_compiler == 1 ? "Yes" : "Full Debug Information (DWARF2)" );
+        m_c_tab[ "General##c" ][ "Multi-processor Compilation" ].set_choice( "Yes" );
+
+        if ( m_compiler == 1 )
+        {            
+            m_c_tab[ "General##c" ][ "Just My Code Debugging" ].set_choice( "Yes" );
+            m_c_tab[ "Preprocessor##c" ][ "Preprocessor Definitions" ].set_params( "_DEBUG; _WIN32; _WINDOWS; _UNICODE; UNICODE" );
+            m_c_tab[ "Code Generation##c" ][ "Run-Time Library" ].set_choice( "Multi-threaded Debug DLL" );
+            m_c_tab[ "Code Generation##c" ][ "Enable Function-Level Linking" ].set_choice( "No" );
+
+            m_linker_tab[ "Input##linker" ][ "Additional Dependencies" ].set_params( "kernel32.lib; user32.lib; gdi32.lib; winspool.lib; comdlg32.lib; advapi32.lib; shell32.lib; ole32.lib; oleaut32.lib; uuid.lib; odbc32.lib; odbccp32.lib" );
+            m_linker_tab[ "Debugging##linker" ][ "Generate Debug Info" ].set_choice( "Yes" );
+            m_linker_tab[ "Debugging##linker" ][ "Generate Program Database File" ].set_params( "$(output).pdb" );
+        }
+        else
+        {
+            m_c_tab[ "General##c" ][ "C Additional Warnings" ].set_params( "switch; no-deprecated-declarations; empty-body; conversion; return-type; parentheses; no-pointer-sign; no-format; uninitialized; unreachable-code; unused-function; unused-value; unused-variable" );
+            m_c_tab[ "General##c" ][ "C++ Additional Warnings" ].set_params( "switch; no-deprecated-declarations; empty-body; conversion; return-type; parentheses; no-pointer-sign; no-format; uninitialized; unreachable-code; unused-function; unused-value; unused-variable" );
+        }
+    }
+
+    void load_defaults_release( )
+    {
+        init( );
+
+        std::memset( m_c_tab.m_command_line, 0, sizeof( m_c_tab.m_command_line ) );
+        std::memset( m_linker_tab.m_command_line, 0, sizeof( m_linker_tab.m_command_line ) );
+        
+        m_c_tab[ "General##c" ][ "Debug Information Format" ].set_choice( m_compiler == 1 ? "Yes" : "Minimal Debug Information" );
+        m_c_tab[ "General##c" ][ "Multi-processor Compilation" ].set_choice( "Yes" );    
+        m_c_tab[ "Optimization##c" ][ "Optimization Level" ].set_choice( "Full Optimization" );
+        m_c_tab[ "Optimization##c" ][ "Omit Frame Pointers" ].set_choice( "Yes" );
+
+        if ( m_compiler == 1 )
+        {
+            m_c_tab[ "Preprocessor##c" ][ "Preprocessor Definitions" ].set_params( "NDEBUG; _WIN32; _WINDOWS; _UNICODE; UNICODE" );
+            m_c_tab[ "Code Generation##c" ][ "Run-Time Library" ].set_choice( "Multi-threaded DLL" );
+            m_c_tab[ "Code Generation##c" ][ "Enable Function-Level Linking" ].set_choice( "Yes" );
+
+            m_linker_tab[ "General##linker" ][ "Enable Incremental Linking" ].set_choice( "No" );
+            m_linker_tab[ "Debugging##linker" ][ "Generate Debug Info" ].set_choice( "Yes" );
+            m_linker_tab[ "Debugging##linker" ][ "Generate Program Database File" ].set_params( "$(output).pdb" );
+            m_linker_tab[ "Debugging##linker" ][ "Map File" ].set_params( "$(output).map" );
+            m_linker_tab[ "Optimization##linker" ][ "Optimize References" ].set_choice( "Yes" );
+            m_linker_tab[ "Optimization##linker" ][ "Enable COMDAT Folding" ].set_choice( "Yes" );
+        }
+        else
+        {
+            m_c_tab[ "General##c" ][ "C Additional Warnings" ].set_params( "switch; no-deprecated-declarations; empty-body; conversion; return-type; parentheses; no-pointer-sign; no-format; uninitialized; unreachable-code; unused-function; unused-value; unused-variable" );
+            m_c_tab[ "General##c" ][ "C++ Additional Warnings" ].set_params( "switch; no-deprecated-declarations; empty-body; conversion; return-type; parentheses; no-pointer-sign; no-format; uninitialized; unreachable-code; unused-function; unused-value; unused-variable" );
+            m_c_tab[ "Preprocessor##c" ][ "Preprocessor Definitions" ].set_params( "NDEBUG" );
+        }
     }
 }

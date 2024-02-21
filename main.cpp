@@ -3,6 +3,7 @@
 
 #include "options/options.h"
 #include "builder/builder.h"
+#include "config/config.h"
 
 #include <iostream>
 #include <algorithm>
@@ -24,10 +25,12 @@ size_t stristr( const std::string& str, const std::string& substr )
 
 int main( int argc, char** argv )
 {
+    bool config_present = config::read( );
     options::init( );
 
     std::memset( options::m_config_file, 0, sizeof( options::m_config_file ) );
     std::memset( options::m_output_file, 0, sizeof( options::m_output_file ) );
+    std::memset( options::m_intermediate_dir, 0, sizeof( options::m_intermediate_dir ) );
 
     if ( argc > 1 )
     {
@@ -61,6 +64,20 @@ int main( int argc, char** argv )
                 continue;
             }
 
+            if ( !strcmp( argv[ i ], "-i" ) || !strcmp( argv[ i ], "--intermediate" ) )
+            {
+                if ( i + 1 >= argc )
+                {
+                    std::cout << "Usage: pivo-make {-c|--config} <config_file> {-o|--output} <output_file>\n";
+                    return 1;
+                }
+
+                strncpy( options::m_intermediate_dir, argv[ i + 1 ], sizeof( options::m_intermediate_dir ) );
+
+                ++i;
+                continue;
+            }
+
             if ( !strcmp( argv[ i ], "-h" ) || !strcmp( argv[ i ], "--help" ) )
             {
                 std::cout << "Usage: pivo-make {-c|--config} <config_file> {-o|--output} <output_file>\n";
@@ -73,8 +90,7 @@ int main( int argc, char** argv )
         if ( options::m_config_file[ 0 ] )
         {
             options::open( );
-            builder::build( );
-            return 0;
+            return builder::build( );
         }
     }
 
@@ -87,6 +103,8 @@ int main( int argc, char** argv )
 
     std::memset( all_options_search, 0, sizeof( all_options_search ) );
 
+    int build = -1;
+
     while ( gui::new_frame( ) )
     {
         ImGui::SetNextWindowSize( ImVec2( WINDOW_WIDTH, WINDOW_HEIGHT ) );
@@ -97,7 +115,7 @@ int main( int argc, char** argv )
         ImGui::SameLine( );
         bool change = ImGui::RadioButton( "Linux", &options::m_compiler, 0 );
         ImGui::SameLine( );
-        change = change || ImGui::RadioButton( "MSVC (windows)", &options::m_compiler, 1 );
+        change = change || ImGui::RadioButton( "Windows", &options::m_compiler, 1 );
 
         if ( change )
         {
@@ -106,7 +124,7 @@ int main( int argc, char** argv )
             options::init( );
         }
 
-        ImGui::SameLine( );
+        ImGui::SetCursorPos( ImVec2( 326, 8 ) );
         ImGui::Text( "  Config file:" );
         ImGui::SameLine( );
         ImGui::SetNextItemWidth( 300 );
@@ -119,8 +137,22 @@ int main( int argc, char** argv )
         if ( ImGui::Button( "Save" ) )
             options::save( );
 
+        ImGui::SameLine( );
+        if ( ImGui::Button( "Build" ) )
+            build = builder::build( );
+
+        if ( build != -1 )
+        {
+            ImGui::SameLine( );
+            
+            if ( build )
+                ImGui::Text( "Compiled" );
+            else
+                ImGui::Text( "Build failed" );
+        }
+
         ImVec2 cursor_pos = ImGui::GetCursorPos( );
-        ImGui::BeginChild( "##tabs", ImVec2( 300, 0 ) );
+        ImGui::BeginChild( "##tabs", ImVec2( 300, 500 ) );
         if ( ImGui::CollapsingHeader( options::m_c_tab.m_name.c_str( ) ) )
         {
             for ( int i = 0; i < options::m_c_tab.m_subtabs.size( ); i++ )
@@ -177,6 +209,8 @@ int main( int argc, char** argv )
             ImGui::InputText( "##search", all_options_search, sizeof( all_options_search ) );
             ImGui::NewLine( );
         }
+        else
+            std::memset( all_options_search, 0, sizeof( all_options_search ) );
         
         do
         {
@@ -185,7 +219,7 @@ int main( int argc, char** argv )
             {
                 options::option_t* option = &chosen_subtab->m_options[ i ];
 
-                if ( current_sub_tab == 8 && stristr( option->m_name, all_options_search ) == std::string::npos )
+                if ( all_options_search[ 0 ] && stristr( option->m_name, all_options_search ) == std::string::npos )
                     continue;
 
                 ImGui::Text( "%s", option->m_name.c_str( ) );
@@ -216,6 +250,24 @@ int main( int argc, char** argv )
         } while ( ++sub_tab < current_sub_tab );
 
         ImGui::EndChild( );
+
+        ImGui::SetCursorPos( ImVec2( 20, WINDOW_HEIGHT - 30 ) );
+
+        ImGui::Text( "Load Defaults:" );
+
+        ImGui::SameLine( );        
+        if ( ImGui::Button( "Debug" ) )
+            options::load_defaults_debug( );
+
+        ImGui::SameLine( );
+        if ( ImGui::Button( "Release" ) )
+            options::load_defaults_release( );
+
+        if ( !config_present )
+        {
+            ImGui::SameLine( );
+            ImGui::Text( "Config file is not found. Windows includes and libs are not present. Try reinstalling pivo-make using install.py script" );
+        }
 
         ImGui::End( );
 

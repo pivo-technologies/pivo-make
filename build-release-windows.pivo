@@ -22,7 +22,7 @@
                 "choice": 0
             },
             "Run-Time Library": {
-                "choice": 0
+                "choice": 2
             },
             "Security Check": {
                 "choice": 0
@@ -42,7 +42,7 @@
                 "params": ""
             },
             "Debug Information Format": {
-                "choice": 2
+                "choice": 1
             },
             "Enable Address Sanitizer": {
                 "choice": 0
@@ -51,7 +51,7 @@
                 "choice": 0
             },
             "Exclude Files From Build": {
-                "params": "imgui_impl_dx11.cpp; imgui_impl_win32.cpp"
+                "params": "imgui_impl_glfw.cpp;imgui_impl_opengl3.cpp"
             },
             "Just My Code Debugging": {
                 "choice": 0
@@ -82,10 +82,10 @@
                 "choice": 0
             },
             "Omit Frame Pointers": {
-                "choice": 0
+                "choice": 1
             },
             "Optimization Level": {
-                "choice": 0
+                "choice": 3
             },
             "Strict Aliasing": {
                 "choice": 0
@@ -101,7 +101,7 @@
         },
         "Preprocessor##c": {
             "Preprocessor Definitions": {
-                "params": ""
+                "params": "_WIN32; UNICODE; _WINDOWS; _MBCS; _CRT_SECURE_NO_WARNINGS"
             },
             "Show All Includes": {
                 "choice": 0
@@ -117,77 +117,128 @@
     },
     "Linker": {
         "Advanced##linker": {
-            "Enable Immediate Function Binding": {
+            "Base Address": {
+                "params": ""
+            },
+            "Data Execution Prevention (DEP)": {
                 "choice": 0
             },
-            "Executable Stack Not Required": {
+            "Entry Point": {
+                "params": ""
+            },
+            "Fixed Base Address": {
                 "choice": 0
             },
-            "Mark Variables ReadOnly After Relocation": {
+            "Import Library": {
+                "params": ""
+            },
+            "Merge Sections": {
+                "params": ""
+            },
+            "No Entry Point": {
                 "choice": 0
             },
-            "Whole Archive": {
+            "Randomized Base Address": {
+                "choice": 0
+            },
+            "Target Machine": {
                 "choice": 0
             }
         },
         "Debugging##linker": {
-            "Debugger Symbol Information": {
-                "choice": 0
+            "Generate Debug Info": {
+                "choice": 1
             },
-            "Map File Name": {
+            "Generate Program Database File": {
+                "params": ""
+            },
+            "Map File": {
                 "params": ""
             }
         },
         "General##linker": {
             "Additional Library Directories": {
-                "params": ""
+                "params": "C:\\Program Files (x86)\\Microsoft DirectX SDK (June 2010)\\Lib\\x64"
             },
-            "Enable Verbose Output": {
+            "Enable Incremental Linking": {
+                "choice": 1
+            },
+            "Force File Output": {
                 "choice": 0
             },
-            "Optimize For Memory Usage": {
+            "Ignore Import Library": {
                 "choice": 0
             },
             "Output File": {
-                "params": "pivo-make"
+                "params": "pivo-make.exe"
             },
-            "Print Map": {
+            "Prevent Dll Binding": {
                 "choice": 0
             },
-            "Report Unresolved Symbol References": {
-                "choice": 0
-            },
-            "Show Progress": {
-                "choice": 0
-            },
-            "Trace": {
-                "choice": 0
-            },
-            "Trace Symbols": {
+            "Specify Section Attributes": {
                 "params": ""
             },
-            "Version": {
+            "Treat Linker Warnings As Errors": {
                 "choice": 0
+            },
+            "Version": {
+                "params": ""
             }
         },
         "Input##linker": {
             "Additional Dependencies": {
-                "params": ""
+                "params": "d3d11.lib; kernel32.lib; user32.lib; gdi32.lib; winspool.lib; comdlg32.lib; advapi32.lib; shell32.lib; ole32.lib; oleaut32.lib; uuid.lib; odbc32.lib; odbccp32.lib"
             },
-            "Force Undefined Symbol References": {
-                "params": ""
-            },
-            "Ignore Default Libraries": {
+            "Ignore All Default Libraries": {
                 "choice": 0
             },
             "Ignore Specific Default Libraries": {
                 "params": ""
+            }
+        },
+        "Manifest File##linker": {
+            "Enable User Account Control": {
+                "choice": 0
             },
-            "Library Dependencies": {
-                "params": "glfw; GLU; GL; pthread"
+            "Generate Manifest": {
+                "choice": 1
+            },
+            "UAC Bypass UI Protection": {
+                "choice": 0
+            },
+            "UAC Execution Level": {
+                "choice": 0
+            }
+        },
+        "Optimization##linker": {
+            "Enable COMDAT Folding": {
+                "choice": 1
+            },
+            "Function Order": {
+                "params": ""
+            },
+            "Optimize References": {
+                "choice": 1
+            }
+        },
+        "System##linker": {
+            "Driver": {
+                "choice": 0
+            },
+            "Heap Size (reserve,commit)": {
+                "params": ""
+            },
+            "Large Address Aware": {
+                "choice": 0
+            },
+            "Stack Size (reserve,commit)": {
+                "params": ""
+            },
+            "SubSystem": {
+                "choice": 0
             }
         },
         "command_line": ""
     },
-    "compiler": 0
+    "compiler": 1
 }

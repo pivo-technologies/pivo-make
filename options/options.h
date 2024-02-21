@@ -1,7 +1,7 @@
 #include <vector>
 #include <string>
 
-#include <nlohmann/json.hpp>
+#include "../nlohmann/json.hpp"
 
 namespace options
 {
@@ -50,13 +50,23 @@ namespace options
             ( m_choices.push_back( choices ), ... );                
         }
 
-        template< typename _ty >
-        static inline _ty read( nlohmann::json& json, const std::string& name )
+        inline void set_params( const std::string& params )
         {
-            if ( json.find( name ) == json.end( ) )
-                return _ty( );
+            m_params = params;
+        }
 
-            return json[ name ].get< _ty >( );
+        inline void set_choice( const std::string& choice_name )
+        {
+            for ( int i = 0; i < m_choices.size( ); i++ )
+            {
+                if ( m_choices[ i ].m_name == choice_name )
+                {
+                    m_current_choice = i;
+                    return;
+                }
+            }
+
+            asm( "ud2" );
         }
     };
 
@@ -64,6 +74,15 @@ namespace options
     {
         std::string m_name;
         std::vector< option_t > m_options;
+
+        inline option_t& operator[ ]( const std::string& option )
+        {
+            for ( auto& o : m_options )
+                if ( o.m_name == option )
+                    return o;
+            
+            asm( "ud2" );
+        }
 
         template< typename... args >
         void add_options( args... options )
@@ -77,6 +96,15 @@ namespace options
         std::string m_name;
         std::vector< subtab_t > m_subtabs;
         char m_command_line[ 1024 ];
+
+        inline subtab_t& operator[ ]( const std::string& subtab )
+        {
+            for ( auto& s : m_subtabs )
+                if ( s.m_name == subtab )
+                    return s;
+            
+            asm( "ud2" );
+        }
     };
 
     inline tab_t m_c_tab;
@@ -84,8 +112,11 @@ namespace options
     inline int m_compiler = 1;
     inline char m_config_file[ 256 ];
     inline char m_output_file[ 256 ];
+    inline char m_intermediate_dir[ 256 ];
 
     void init( );
     void open( );
     void save( );
+    void load_defaults_debug( );
+    void load_defaults_release( );
 }
