@@ -13,9 +13,10 @@ namespace config
 
         if ( !file.is_open( ) || !file.good( ) )
         {
-            strcpy( m_cxx_compiler, "clang++" );
-            strcpy( m_linker_windows, "lld-link" );
-            strcpy( m_linker_linux, "clang++" );
+            m_cxx_windows = "clang++";
+            m_cxx_linux = "clang++";
+            m_linker_windows = "lld-link";
+            m_linker_linux = "clang++";
 
             return false;
         }
@@ -25,15 +26,22 @@ namespace config
 
         file.close( );
 
-        strncpy( m_cxx_compiler, json[ "cxx_compiler" ].get< std::string >( ).data( ), sizeof( m_cxx_compiler ) );
-        strncpy( m_linker_windows, json[ "linker_windows" ].get< std::string >( ).data( ), sizeof( m_linker_windows ) );
-        strncpy( m_linker_linux, json[ "linker_linux" ].get< std::string >( ).data( ), sizeof( m_linker_linux ) );
+        m_cxx_windows = json[ "cxx_windows" ].get< std::string >( );
+        m_cxx_linux = json[ "cxx_linux" ].get< std::string >( );
+        m_linker_windows = json[ "linker_windows" ].get< std::string >( );
+        m_linker_linux = json[ "linker_linux" ].get< std::string >( );
 
-        if ( json.contains( "include_path" ) )
-            m_include_path = json[ "include_path" ].get< std::vector< std::string > >( );
+        if ( json.contains( "include_path_windows" ) )
+            m_include_path_windows = json[ "include_path_windows" ].get< std::vector< std::string > >( );
 
-        if ( json.contains( "lib_path" ) )
-            m_lib_path = json[ "lib_path" ].get< std::vector< std::string > >( );
+        if ( json.contains( "lib_path_windows" ) )
+            m_lib_path_windows = json[ "lib_path_windows" ].get< std::vector< std::string > >( );
+
+        if ( json.contains( "include_path_linux" ) )
+            m_include_path_linux = json[ "include_path_linux" ].get< std::vector< std::string > >( );
+
+        if ( json.contains( "lib_path_linux" ) )
+            m_lib_path_linux = json[ "lib_path_linux" ].get< std::vector< std::string > >( );
 
         return true;
     }

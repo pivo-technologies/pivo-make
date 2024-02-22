@@ -305,10 +305,11 @@ namespace options
         }
     }
 
-    void open( )
+    bool open( )
     {
         std::string config_filename = m_config_file;
-        if ( config_filename.rfind( ".pivo" ) != ( config_filename.size( ) - config_filename.size( ) ) )
+        std::string ending = ".pivo";
+        if ( !std::equal( ending.rbegin( ), ending.rend( ), config_filename.rbegin( ) ) )
             config_filename += ".pivo";
 
         std::ifstream file( config_filename );
@@ -316,7 +317,7 @@ namespace options
         if ( !file.is_open( ) || !file.good( ) )
         {
             std::cout << "Failed to open file " << config_filename << std::endl;
-            return;
+            return false;
         }
 
         nlohmann::json json;
@@ -369,12 +370,15 @@ namespace options
                 }
             }
         }
+
+        return true;
     }
 
     void save( )
     {
         std::string config_filename = m_config_file;
-        if ( config_filename.rfind( ".pivo" ) != ( config_filename.size( ) - config_filename.size( ) ) )
+        std::string ending = ".pivo";
+        if ( !std::equal( ending.rbegin( ), ending.rend( ), config_filename.rbegin( ) ) )
             config_filename += ".pivo";
 
         std::ofstream file( config_filename );

@@ -88,10 +88,7 @@ int main( int argc, char** argv )
         }
 
         if ( options::m_config_file[ 0 ] )
-        {
-            options::open( );
-            return builder::build( );
-        }
+            return options::open( ) && builder::build( );
     }
 
     if ( !gui::init( ) )

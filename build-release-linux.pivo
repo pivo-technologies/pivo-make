@@ -63,7 +63,7 @@
                 "choice": 0
             },
             "Warning Level": {
-                "choice": 0
+                "choice": 3
             }
         },
         "Language##c": {
@@ -82,10 +82,10 @@
                 "choice": 0
             },
             "Omit Frame Pointers": {
-                "choice": 0
+                "choice": 1
             },
             "Optimization Level": {
-                "choice": 0
+                "choice": 3
             },
             "Strict Aliasing": {
                 "choice": 0
@@ -101,7 +101,7 @@
         },
         "Preprocessor##c": {
             "Preprocessor Definitions": {
-                "params": ""
+                "params": "NDEBUG"
             },
             "Show All Includes": {
                 "choice": 0

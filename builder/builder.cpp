@@ -98,18 +98,17 @@ namespace builder
         std::vector< std::string > linker_commands;
         std::vector< std::string > excluded_files;
 
-        cxx_commands.push_back( wrap_string( config::m_cxx_compiler ) );
-        cxx_commands.push_back( "-c" );
-
         std::string cxx_standard;
         std::string c_standard;
         std::string output_filename;
 
         if ( options::m_compiler == 1 )
         {
+            cxx_commands.push_back( wrap_string( config::m_cxx_windows ) );
+            cxx_commands.push_back( "-c" );
             linker_commands.push_back( wrap_string( config::m_linker_windows ) );
 
-            bool manifest_uac_control = false;            
+            bool manifest_uac_control = false;
 
             for ( auto& sub_tab : options::m_linker_tab.m_subtabs )
             {
@@ -205,6 +204,8 @@ namespace builder
         }
         else
         {            
+            cxx_commands.push_back( wrap_string( config::m_cxx_linux ) );
+            cxx_commands.push_back( "-c" );
             linker_commands.push_back( wrap_string( config::m_linker_linux ) );
 
             for ( auto& sub_tab : options::m_linker_tab.m_subtabs )
@@ -258,13 +259,10 @@ namespace builder
             }
         }
 
-        std::string lib_command;
-        if ( options::m_compiler == 1 )
-            lib_command = "/libpath:";
-        else
-            lib_command = "-L ";
+        std::string lib_command = options::m_compiler == 1 ? "/libpath:" : "-L ";
+        const std::vector< std::string >& lib_path_vector = options::m_compiler == 1 ? config::m_lib_path_windows : config::m_lib_path_linux;
 
-        for ( const auto& path : config::m_lib_path )
+        for ( const auto& path : lib_path_vector )
             linker_commands.push_back( lib_command + wrap_string( path ) );
 
         linker_commands.push_back( options::m_linker_tab.m_command_line );
@@ -279,7 +277,7 @@ namespace builder
                         continue;
 
                     if ( option.m_name == "Additional Include Directories" )
-                        cxx_commands.push_back( parse_params_list( option.m_params, "-I" ) );
+                        cxx_commands.push_back( parse_params_list( option.m_params, "-idirafter" ) );
 
                     if ( option.m_name == "Exclude Files From Build" )
                     {
@@ -307,7 +305,7 @@ namespace builder
                     if ( option.m_name == "Force Include File" )
                         cxx_commands.push_back( parse_params_list( option.m_params, "-include " ) );
                 }
-                else
+                else if ( option.m_choices.size( ) )
                 {
                     const std::string& command_line = option.m_choices[ option.m_current_choice ].m_cmd_line;
                     if ( !multithread && command_line == "/MP" )
@@ -316,9 +314,9 @@ namespace builder
                     }
                     else if ( !command_line.empty( ) )
                     {
-                        if ( option.m_name.find( "C++ Language Standard" ) != std::string::npos )
+                        if ( option.m_name == "C++ Language Standard" )
                             cxx_standard = command_line;
-                        else if ( option.m_name.find( "C Language Standard" ) != std::string::npos )
+                        else if ( option.m_name == "C Language Standard" )
                             c_standard = command_line;
                         else
                             cxx_commands.push_back( command_line );
@@ -327,9 +325,10 @@ namespace builder
             }
         }
 
-        for ( const auto& path : config::m_include_path )
+        const std::vector< std::string >& include_path_vector = options::m_compiler == 1 ? config::m_include_path_windows : config::m_include_path_linux;
+        for ( const auto& path : include_path_vector )
         {
-            cxx_commands.push_back( "-I" );
+            cxx_commands.push_back( "-idirafter" );
             cxx_commands.push_back( wrap_string( path ) );
         }
 
@@ -393,7 +392,7 @@ namespace builder
                 return false;
             }
 
-            final_linker_command += " " + intermediate_dir +"/" + file.string( );
+            final_linker_command += " " + intermediate_dir + "/" + file.string( );
         }
 
         run_process( final_linker_command );

@@ -115,7 +115,7 @@ namespace options
     inline char m_intermediate_dir[ 256 ];
 
     void init( );
-    void open( );
+    bool open( );
     void save( );
     void load_defaults_debug( );
     void load_defaults_release( );
