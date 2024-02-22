@@ -5,11 +5,29 @@
 #include <string>
 #include <fstream>
 
+#ifdef _WIN32
+#include <windows.h>
+
+std::string get_executable_path( )
+{
+    char buffer[ MAX_PATH ];
+    GetModuleFileNameA( NULL, buffer, MAX_PATH );
+    std::string::size_type pos = std::string( buffer ).find_last_of( "\\/" );
+    return std::string( buffer ).substr( 0, pos );
+}
+#endif
+
 namespace config
 {
     bool read( )
     {        
-        std::ifstream file( m_config_path );
+#ifdef _WIN32
+        const std::string config_path = get_executable_path( ) + "\\" + m_config_path;
+#else
+        const std::string& config_path = m_config_path;
+#endif
+
+        std::ifstream file( config_path );
 
         if ( !file.is_open( ) || !file.good( ) )
         {

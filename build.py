@@ -52,16 +52,19 @@ if not windows:
     subprocess.run( 'find . -name "*.o" -delete', shell=True )
 else:
     print( "Building pivo-make for Windows" )
-    subprocess.run( 'for /r %%i in (*.cpp) do ( clang++ -c -std=c++20 -D _WIN32 -D UNICODE -D _CRT_SECURE_NO_WARNINGS "%%i" -o "%%~ni.o" )', shell=True )
-    os.remove( output_file )
-    subprocess.run( f'lld-link /libpath:"C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Lib\x64" /libpath:"C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64" /libpath:"C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\ucrt\x64" /defaultlib:LIBCMT.lib d3d11.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /DYNAMICBASE /NXCOMPAT *.o /subsystem:CONSOLE /out:{output_file}', shell=True )
+    subprocess.run( 'del /s /q *.o', shell=True )
+    subprocess.run( 'for /r %i in (*.cpp) do ( clang++ -c -std=c++20 -D _WIN32 -D UNICODE -D _CRT_SECURE_NO_WARNINGS "%i" -o "%~ni.o" )', shell=True )
+    if os.path.exists( output_file ):
+        os.remove( output_file )
+    subprocess.run( f'lld-link /libpath:"C:\\Program Files (x86)\\Microsoft DirectX SDK (June 2010)\\Lib\\x64" /libpath:"C:\\Program Files (x86)\\Windows Kits\\10\Lib\\10.0.22621.0\\um\\x64" /libpath:"C:\\Program Files (x86)\\Windows Kits\10\Lib\10.0.22621.0\\ucrt\\x64" /defaultlib:LIBCMT.lib d3d11.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /DYNAMICBASE /NXCOMPAT *.o /subsystem:CONSOLE /out:{output_file}', shell=True )
     subprocess.run( 'del /s /q *.o', shell=True )
 
 if os.path.exists( output_file ):
+    print( "File is successfully compiled" )
     if not do_not_run:
         subprocess.run( f'lldb -o "settings set target.x86-disassembly-flavor intel" -o "run {app_flags}" {output_file}', shell=True )
 else:
-    print( "failed to compile" )
+    print( "Failed to compile" )
 
-if remove_file:
-    subprocess.run( f"rm -f {output_file}", shell=True )
+if remove_file and os.path.exists( output_file ):
+    os.remove( output_file )

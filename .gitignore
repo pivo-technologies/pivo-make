@@ -3,3 +3,4 @@
 *.exe
 *.manifest
 *.pdb
+*.o
