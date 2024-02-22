@@ -102,10 +102,12 @@ namespace builder
         std::string c_standard;
         std::string output_filename;
 
+        cxx_commands.push_back( options::m_compiler == 1 ? wrap_string( config::m_cxx_windows ) : wrap_string( config::m_cxx_linux ) );
+        cxx_commands.push_back( "-c" );
+
         if ( options::m_compiler == 1 )
         {
-            cxx_commands.push_back( wrap_string( config::m_cxx_windows ) );
-            cxx_commands.push_back( "-c" );
+            cxx_commands.push_back( "--target=x86_64-pc-windows-msvc" );
             linker_commands.push_back( wrap_string( config::m_linker_windows ) );
 
             bool manifest_uac_control = false;
@@ -203,9 +205,8 @@ namespace builder
             }
         }
         else
-        {            
-            cxx_commands.push_back( wrap_string( config::m_cxx_linux ) );
-            cxx_commands.push_back( "-c" );
+        {       
+            cxx_commands.push_back( "--target=x86_64-unknown-linux-gnu" );     
             linker_commands.push_back( wrap_string( config::m_linker_linux ) );
 
             for ( auto& sub_tab : options::m_linker_tab.m_subtabs )
