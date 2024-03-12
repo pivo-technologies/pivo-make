@@ -31,6 +31,13 @@ else:
     print( 'You are running installation script on unsupported OS' )
     close( )
 
+reinstall_config = True
+
+if len( sys.argv ) > 1:
+    for i in range( 1, len( sys.argv ) ):
+        if sys.argv[ i ] == "--keep-config":
+            reinstall_config = False
+
 intermediate_file = 'pivomake.exe' if windows else 'pivomake'
 subprocess.run( f'python build.py -o {intermediate_file} --no-remove --do-not-run', shell=True )
 
@@ -53,7 +60,9 @@ if not os.path.exists( 'pivo.config' ):
 
 os.makedirs( 'C:\\Program Files\\pivo-make' if windows else '/etc/pivo-make', exist_ok=True )
 
-shutil.copy( 'pivo.config', 'C:\\Program Files\\pivo-make\\pivo.config' if windows else '/etc/pivo-make/pivo.config' )
+if reinstall_config:
+    shutil.copy( 'pivo.config', 'C:\\Program Files\\pivo-make\\pivo.config' if windows else '/etc/pivo-make/pivo.config' )
+
 shutil.copy( 'pivo-make.exe' if windows else 'pivo-make', 'C:\\Program Files\\pivo-make' if windows else '/usr/local/bin/pivo-make' )
 
 if not os.path.exists( 'C:\\Program Files\\pivo-make\\pivo.config' if windows else '/etc/pivo-make/pivo.config' ) or not os.path.exists( 'C:\\Program Files\\pivo-make\\pivo-make.exe' if windows else '/usr/local/bin/pivo-make' ):
@@ -66,7 +75,13 @@ else:
             if 'C:\\Program Files\\pivo-make\\' not in current_path:
                 winreg.SetValueEx( key, 'Path', 0, winreg.REG_EXPAND_SZ, current_path + ';' + 'C:\\Program Files\\pivo-make\\' )
     print( 'pivo-make has been installed to', 'C:\\Program Files\\pivo-make\\' if windows else '/usr/local/bin/' )
-    print( 'You can change the config file following documentation', 'C:\\Program Files\\pivo-make\\pivo.config' if windows else '/etc/pivo-make/pivo.config' )
+
+    if reinstall_config:
+        print( 'You can change the config file following documentation', 'C:\\Program Files\\pivo-make\\pivo.config' if windows else '/etc/pivo-make/pivo.config' )
+    else:
+        print( 'Config file was not replaced with default' )
+
+shutil.rmtree( 'pivo-build' )
 
 print( 'This window will close in 1 hour. You may do it yourself' )
 close( )

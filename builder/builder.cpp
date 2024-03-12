@@ -15,13 +15,13 @@
 
 namespace builder
 {
-    std::string replace_sequence( std::string str, const std::string& seq, const std::string& new_seq ) 
+    std::string replace_sequence( std::string str, const std::string& from, const std::string& to ) 
     {
-        size_t pos = 0;
-        while ( ( pos = str.find( seq, pos ) ) != std::string::npos ) 
+        size_t start_pos = 0;
+        while( ( start_pos = str.find( from, start_pos ) ) != std::string::npos ) 
         {
-            str.replace( pos, 1, new_seq );
-            pos += new_seq.length( );
+            str.replace( start_pos, from.length( ), to );
+            start_pos += to.length( ); 
         }
 
         return str;
@@ -339,7 +339,9 @@ namespace builder
         for ( const auto& command : cxx_commands )
             final_cxx_command += command + " ";
 
-        replace_sequence( final_cxx_command, "$(output)", output_filename );
+        std::string output_no_extension = std::filesystem::path( output_filename ).replace_extension( ).string( );
+
+        final_cxx_command = replace_sequence( final_cxx_command, "$(output)", output_no_extension );
 
         std::filesystem::path current_dir = std::filesystem::current_path( );
         std::vector< std::filesystem::path > files;
@@ -381,7 +383,7 @@ namespace builder
         for ( const auto& command : linker_commands )
             final_linker_command += command + " ";
 
-        replace_sequence( final_linker_command, "$(output)", output_filename );
+        final_linker_command = replace_sequence( final_linker_command, "$(output)", output_no_extension );
 
         for ( auto& file : files )
         {
